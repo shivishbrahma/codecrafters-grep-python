@@ -5,7 +5,7 @@ import re
 # import lark - available if you need it!
 
 
-def match_pattern(input_line, pattern):
+def match_pattern(input_line, pattern: str):
     print(input_line, pattern)
     if len(pattern) == 1:
         return pattern in input_line
@@ -15,6 +15,8 @@ def match_pattern(input_line, pattern):
         return any(
             char.isdigit() or char.isalpha() or char == "_" for char in input_line
         )
+    elif pattern.startswith("[") and pattern.endswith("]"):
+        return any(char in pattern[1:-1] for char in input_line)
     else:
         raise RuntimeError(f"Unhandled pattern: {pattern}")
 
