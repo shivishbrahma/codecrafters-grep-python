@@ -59,38 +59,51 @@ def match_token(pattern_token: Union[RegexSingleton, str], string: str):
 
 def match_at_position(line, tokens, pos):
     if pos + len(tokens) > len(line):
-        return False
+        return (False, -1)
+    cur = pos
     for i in range(len(tokens)):
         if RegexSingleton.is_singleton(tokens[i]):
             if not match_token(RegexSingleton(tokens[i]), line[pos + i]):
                 # print("False", RegexSingleton(tokens[i]).value, repr(line[pos + i]))
-                return False
+                return (False, -1)
+            cur += 1
         elif len(tokens[i]) == 1:
             if not match_token(tokens[i], line[pos + i]):
                 # print("False", repr(tokens[i]), line[pos + i])
-                return False
+                return (False, -1)
+            cur += 1
         else:
             if not match_token(tokens[i], line[pos + i :]):
                 # print("False", repr(tokens[i]), line[pos + i :])
-                return False
+                return (False, -1)
+            # cur += len(tokens[i])
+            cur = len(line)
 
-    return True
+    return (True, cur)
 
 
 def match_pattern(input_line: str, pattern: str):
     is_start = False
+    is_end = False
     if pattern[0] == "^":
         pattern = pattern[1:]
         is_start = True
+
+    if pattern[-1] == "$":
+        pattern = pattern[:-1]
+        is_end = True
 
     tokens = tokenize(pattern)
     input_line = input_line.strip()
     print(tokens, input_line)
     for pos in range(len(input_line) - len(tokens) + 1):
-        if match_at_position(input_line, tokens, pos):
+        is_match, last_pos = match_at_position(input_line, tokens, pos)
+        if is_match:
+            if is_end and last_pos != len(input_line):
+                return False
             print("Pattern matched")
             return True
-        if is_start  and pos == 0:
+        if is_start and pos == 0:
             return False
     return False
 
