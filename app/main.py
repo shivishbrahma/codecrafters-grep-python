@@ -16,7 +16,7 @@ def match_pattern(input_line, pattern: str):
             char.isdigit() or char.isalpha() or char == "_" for char in input_line
         )
     elif pattern.startswith("[^") and pattern.endswith("]"):
-        return not any(
+        return not all(
             char in pattern[2:-1] for char in input_line
         )
     elif pattern.startswith("[") and pattern.endswith("]"):
