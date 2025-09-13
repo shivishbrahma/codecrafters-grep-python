@@ -1,28 +1,106 @@
 import sys
 import re
+from enum import Enum
+from typing import Union
 
 # import pyparsing - available if you need it!
 # import lark - available if you need it!
 
 
-def match_pattern(input_line, pattern: str):
-    print(input_line, pattern)
-    if len(pattern) == 1:
-        return pattern in input_line
-    elif pattern == "\\d":
-        return any(char.isdigit() for char in input_line)
-    elif pattern == "\\w":
-        return any(
-            char.isdigit() or char.isalpha() or char == "_" for char in input_line
-        )
-    elif pattern.startswith("[^") and pattern.endswith("]"):
-        return not all(
-            char in pattern[2:-1] for char in input_line
-        )
-    elif pattern.startswith("[") and pattern.endswith("]"):
-        return any(char in pattern[1:-1] for char in input_line)
-    else:
-        raise RuntimeError(f"Unhandled pattern: {pattern}")
+class RegexSingleton(Enum):
+    ANY = "."
+    DIGIT = "\\d"
+    ALNUM = "\\w"
+
+    @staticmethod
+    def is_singleton(string: str):
+        return string in RegexSingleton._value2member_map_
+
+
+def tokenize(pattern: str):
+    tokens = []
+    i = 0
+    while i < len(pattern):
+        if pattern[i] == "\\":
+            if i + 1 < len(pattern):
+                tokens.append(pattern[i : i + 2])
+                i += 2
+            else:
+                raise ValueError("Invalid escape sequence")
+        elif pattern[i] == "[":
+            j = i + 1
+            while j < len(pattern) and pattern[j] != "]":
+                j += 1
+            if j < len(pattern):
+                tokens.append(pattern[i : j + 1])
+                i = j + 1
+        else:
+            tokens.append(pattern[i])
+            i += 1
+
+    return tokens
+
+
+def match_token(pattern_token: Union[RegexSingleton, str], string: str):
+    if pattern_token == RegexSingleton.DIGIT:
+        return string.isdigit()
+    elif pattern_token == RegexSingleton.ALNUM:
+        return string.isalnum() or string == "_"
+    if isinstance(pattern_token, RegexSingleton):
+        raise RuntimeError(f"Unhandled pattern: {pattern_token}")
+
+    if pattern_token.startswith("[^") and pattern_token.endswith("]"):
+        return not all(char in pattern_token[2:-1] for char in string)
+    elif pattern_token.startswith("[") and pattern_token.endswith("]"):
+        return any(char in pattern_token[1:-1] for char in string)
+
+    return pattern_token == string
+
+
+def match_at_position(line, tokens, pos):
+    if pos + len(tokens) > len(line):
+        return False
+    for i in range(len(tokens)):
+        if RegexSingleton.is_singleton(tokens[i]):
+            if not match_token(RegexSingleton(tokens[i]), line[pos + i]):
+                # print("False", RegexSingleton(tokens[i]).value, repr(line[pos + i]))
+                return False
+        elif len(tokens[i]) == 1:
+            if not match_token(tokens[i], line[pos + i]):
+                # print("False", repr(tokens[i]), line[pos + i])
+                return False
+        else:
+            if not match_token(tokens[i], line[pos + i :]):
+                # print("False", repr(tokens[i]), line[pos + i :])
+                return False
+
+    return True
+
+
+def match_pattern(input_line: str, pattern: str):
+    tokens = tokenize(pattern)
+    input_line = input_line.strip()
+    print(tokens, input_line)
+    for pos in range(len(input_line) - len(tokens) + 1):
+        if match_at_position(input_line, tokens, pos):
+            print("Pattern matched")
+            return True
+    return False
+
+    # if len(pattern) == 1:
+    #     return pattern in input_line
+    # elif pattern == "\\d":
+    #     return any(char.isdigit() for char in input_line)
+    # elif pattern == "\\w":
+    #     return any(
+    #         char.isdigit() or char.isalpha() or char == "_" for char in input_line
+    #     )
+    # elif pattern.startswith("[^") and pattern.endswith("]"):
+    #     return not all(char in pattern[2:-1] for char in input_line)
+    # elif pattern.startswith("[") and pattern.endswith("]"):
+    #     return any(char in pattern[1:-1] for char in input_line)
+    # else:
+    #     raise RuntimeError(f"Unhandled pattern: {pattern}")
 
 
 def main():
