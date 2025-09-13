@@ -78,6 +78,11 @@ def match_at_position(line, tokens, pos):
 
 
 def match_pattern(input_line: str, pattern: str):
+    is_start = False
+    if pattern[0] == "^":
+        pattern = pattern[1:]
+        is_start = True
+
     tokens = tokenize(pattern)
     input_line = input_line.strip()
     print(tokens, input_line)
@@ -85,22 +90,9 @@ def match_pattern(input_line: str, pattern: str):
         if match_at_position(input_line, tokens, pos):
             print("Pattern matched")
             return True
+        if is_start  and pos == 0:
+            return False
     return False
-
-    # if len(pattern) == 1:
-    #     return pattern in input_line
-    # elif pattern == "\\d":
-    #     return any(char.isdigit() for char in input_line)
-    # elif pattern == "\\w":
-    #     return any(
-    #         char.isdigit() or char.isalpha() or char == "_" for char in input_line
-    #     )
-    # elif pattern.startswith("[^") and pattern.endswith("]"):
-    #     return not all(char in pattern[2:-1] for char in input_line)
-    # elif pattern.startswith("[") and pattern.endswith("]"):
-    #     return any(char in pattern[1:-1] for char in input_line)
-    # else:
-    #     raise RuntimeError(f"Unhandled pattern: {pattern}")
 
 
 def main():
